@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         STANDART TIME SHEET
 // @namespace    http://tampermonkey.net/
-// @version      0.7
+// @version      0.8
 // @description  this script replace department's name value task status in time sheet page
 // @author       yuriy.bylinkin@gmail.com
 // @match        https://standart.nikamed.ru/*
@@ -16,26 +16,46 @@
         function main()
         {
 
-            const headers = document.querySelectorAll("div.header-cell.resource-cell");
-            headers.forEach((header) => {
-                if (header.innerHTML == 'Статус') { return;}
-                header.innerHTML = 'Статус';
+            const resourcecells = document.querySelectorAll("div.header-cell.resource-cell");
+            resourcecells.forEach((resourcecell) => {
+                if (resourcecell.innerHTML == 'Статус') { return;}
+                resourcecell.innerHTML = 'Статус';
+            });
+
+            const firstmoments = document.querySelectorAll("div.header-cell.moment-cell.first-moment");
+            firstmoments.forEach((firstmoment) => {
+                if (firstmoment.innerHTML == 'Последний комментарий') { return;}
+                firstmoment.innerHTML = 'Последний комментарий';
+                firstmoment.style.minWidth = '200px';
+                firstmoment.style.maxWidth = '200px';
+                firstmoment.classList.remove("moment-cell");
+            });
+
+            const secondmoments = document.querySelectorAll("div.header-cell.moment-cell.second-moment");
+            secondmoments.forEach((secondmoment) => {
+                secondmoment.style.display = 'none';
             });
 
             const rows = document.querySelectorAll("div.workarea-row.ng-star-inserted");
             rows.forEach((row) => {
 
-                const markDiv = document.createElement('span');
-                const markContent = document.createTextNode('.');
-                markDiv.appendChild(markContent);
+                //const markDiv = document.createElement('span');
+                //const markContent = document.createTextNode('.');
+                //markDiv.appendChild(markContent);
 
+                //const firstChild = row.firstChild;
+                //if (firstChild.innerHTML == '.') { return;};
+                //row.insertBefore(markDiv, firstChild);
 
-                const firstChild = row.firstChild;
-                if (firstChild.innerHTML == '.') { return;};
-                row.insertBefore(markDiv, firstChild);
+                const secondmoments = row.querySelectorAll("div.workarea-cell.moment-cell.second-moment");
+                secondmoments.forEach((secondmoment) => {
+                    if (secondmoment.style.display == 'none') { return;};
+                    secondmoment.style.display = 'none';
+                });
 
                 const tasks = row.querySelectorAll("performers-title-component");
                 tasks.forEach((task) => {
+
                     var number_task = task.children[0].innerHTML;
                     var link = 'https://standart.nikamed.ru/app/v1.0/api/feeds/task/' + number_task;
                     let req = new XMLHttpRequest();
@@ -52,12 +72,8 @@
                             const targets = row.querySelectorAll("div.workarea-cell.resource-cell");
                             targets.forEach((target) => {
                                 target.innerHTML = status;
-
-
                             });
-
-
-                        }
+                      }
                     }
 
                     var req_body = '{ \
@@ -80,10 +96,18 @@
 
                             var comment_text = '<p><small>' + last_comment.text + ' (<b>' + last_comment.userName + '</b>)</small></p>';
 
-                            const commentDiv = document.createElement('span');
-                            commentDiv.innerHTML = comment_text;
+                            const firstmoments = row.querySelectorAll("div.workarea-cell.moment-cell.first-moment");
+                            firstmoments.forEach((firstmoment) => {
+                                firstmoment.innerHTML = comment_text;
+                                firstmoment.style.minWidth = '200px';
+                                firstmoment.style.maxWidth = '200px';
+                                firstmoment.classList.remove("moment-cell");
+                            });
 
-                            task.appendChild(commentDiv);
+                            //const commentDiv = document.createElement('span');
+                            //commentDiv.innerHTML = comment_text;
+
+                            //task.appendChild(commentDiv);
                         }
                     }
                 });
