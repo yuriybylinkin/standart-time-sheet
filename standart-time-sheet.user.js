@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         STANDART TIME SHEET
 // @namespace    http://tampermonkey.net/
-// @version      0.8
-// @description  this script replace department's name value task status in time sheet page
+// @version      0.9
+// @description  this script improve time sheet page
 // @author       yuriy.bylinkin@gmail.com
 // @match        https://standart.nikamed.ru/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=nikamed.ru
@@ -36,6 +36,9 @@
                 secondmoment.style.display = 'none';
             });
 
+            var refresh_total = true;
+
+
             const rows = document.querySelectorAll("div.workarea-row.ng-star-inserted");
             rows.forEach((row) => {
 
@@ -49,8 +52,9 @@
 
                 const secondmoments = row.querySelectorAll("div.workarea-cell.moment-cell.second-moment");
                 secondmoments.forEach((secondmoment) => {
-                    if (secondmoment.style.display == 'none') { return;};
+                    if (secondmoment.style.display == 'none') { refresh_total = false; return;};
                     secondmoment.style.display = 'none';
+
                 });
 
                 const tasks = row.querySelectorAll("performers-title-component");
@@ -72,14 +76,15 @@
                             const targets = row.querySelectorAll("div.workarea-cell.resource-cell");
                             targets.forEach((target) => {
                                 target.innerHTML = status;
+                                refresh_total = true;
                             });
-                      }
+                        }
                     }
 
                     var req_body = '{ \
-                                          "taskId": ' + number_task + ', \
-                                          "forLinkedTasks": true \
-                                         }';
+"taskId": ' + number_task + ', \
+"forLinkedTasks": true \
+}';
                     let req1 = new XMLHttpRequest();
                     req1.open('POST', 'https://standart.nikamed.ru/api/comments?v=2.0', true);
                     req1.setRequestHeader('Content-Type', 'application/json');
@@ -104,15 +109,64 @@
                                 firstmoment.classList.remove("moment-cell");
                             });
 
-                            //const commentDiv = document.createElement('span');
-                            //commentDiv.innerHTML = comment_text;
-
-                            //task.appendChild(commentDiv);
                         }
                     }
                 });
             });
+
+            if (refresh_total == false) {return};
+
+            const totalrow = document.querySelector("div.time-sheet-total");
+
+            let totalrow_div = totalrow.querySelector("div.total-cell.title-cell.title-cell-total.ng-star-inserted");
+            const title_totalrow = 'Общие трудозатраты ( Факт / План ):';
+            if (totalrow_div.innerHTML !== 'ntc')
+            {
+                const data_cells = totalrow.querySelectorAll("div.data-cell.ng-star-inserted");
+                var plan_sum = 0;
+                var fact_sum = 0;
+                data_cells.forEach((data_cell) => {
+                    var plan = 0;
+                    var fact = 0;
+                    for (let elem of data_cell.children) {
+                        //alert(elem.innerHTML);
+                        for (let elem1 of elem.children) {
+
+                            //alert(elem1.innerHTML);
+
+                            var hour = 0;
+                            var min = 0;
+
+                            var time_text = elem1.innerHTML;
+                            time_text.replace(' ', '');
+                            var hour_mark = time_text.indexOf('ч.');
+                            var min_mark = time_text.indexOf('мин');
+                            if(hour_mark !== -1) {hour = Number(time_text.slice(0, hour_mark));};
+                            if(min_mark !== -1 && hour_mark !== -1) {min = Number(time_text.slice(hour_mark + 2, min_mark));};
+                            var time = hour*60 + min;
+                            if(fact !== 0 && plan == 0) {plan = time;};
+                            if(fact == 0) {fact = time;};
+
+                            //alert(fact);
+                            //alert(plan);
+
+                        };
+                    };
+                    fact_sum = fact_sum + fact;
+                    plan_sum = plan_sum + plan;
+                });
+
+                totalrow_div.innerHTML = title_totalrow + ' <b><span>' + getTimeTextFromMins(fact_sum) + ' / </span> <span>' + getTimeTextFromMins(plan_sum) + '</span></b>';};
+            //totalrow.insertBefore(markDiv, totalrow_div.nextSibling);
         }
 
         main()}, 2000);
+
+    function getTimeTextFromMins(mins) {
+        let hours = Math.trunc(mins/60);
+        let minutes = mins % 60;
+        var time_text = hours + 'ч.';
+        if (minutes > 0) {time_text = time_text + ' ' + minutes + 'мин';};
+        return time_text;
+    };
 })();
