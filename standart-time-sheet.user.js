@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         STANDART TIME SHEET
 // @namespace    http://tampermonkey.net/
-// @version      0.9
+// @version      0.9.1
 // @description  this script improve time sheet page
 // @author       yuriy.bylinkin@gmail.com
 // @match        https://standart.nikamed.ru/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=nikamed.ru
-// @noframes
+// @updateURL    https://github.com/yuriybylinkin/standart-time-sheet/releases/download/v0.9/standart-time-sheet.user.js
+// @downloadURL  https://github.com/yuriybylinkin/standart-time-sheet/releases/download/v0.9/standart-time-sheet.user.js
 // ==/UserScript==
 
 (function() {
@@ -26,9 +27,7 @@
             firstmoments.forEach((firstmoment) => {
                 if (firstmoment.innerHTML == 'Последний комментарий') { return;}
                 firstmoment.innerHTML = 'Последний комментарий';
-                firstmoment.style.minWidth = '200px';
-                firstmoment.style.maxWidth = '200px';
-                firstmoment.classList.remove("moment-cell");
+                setElementStyle(firstmoment);
             });
 
             const secondmoments = document.querySelectorAll("div.header-cell.moment-cell.second-moment");
@@ -38,17 +37,8 @@
 
             var refresh_total = true;
 
-
             const rows = document.querySelectorAll("div.workarea-row.ng-star-inserted");
             rows.forEach((row) => {
-
-                //const markDiv = document.createElement('span');
-                //const markContent = document.createTextNode('.');
-                //markDiv.appendChild(markContent);
-
-                //const firstChild = row.firstChild;
-                //if (firstChild.innerHTML == '.') { return;};
-                //row.insertBefore(markDiv, firstChild);
 
                 const secondmoments = row.querySelectorAll("div.workarea-cell.moment-cell.second-moment");
                 secondmoments.forEach((secondmoment) => {
@@ -104,9 +94,7 @@
                             const firstmoments = row.querySelectorAll("div.workarea-cell.moment-cell.first-moment");
                             firstmoments.forEach((firstmoment) => {
                                 firstmoment.innerHTML = comment_text;
-                                firstmoment.style.minWidth = '200px';
-                                firstmoment.style.maxWidth = '200px';
-                                firstmoment.classList.remove("moment-cell");
+                                setElementStyle(firstmoment);
                             });
 
                         }
@@ -129,16 +117,16 @@
                     var plan = 0;
                     var fact = 0;
                     for (let elem of data_cell.children) {
-                        //alert(elem.innerHTML);
-                        for (let elem1 of elem.children) {
 
-                            //alert(elem1.innerHTML);
+                        for (let elem1 of elem.children) {
 
                             var hour = 0;
                             var min = 0;
 
                             var time_text = elem1.innerHTML;
                             time_text.replace(' ', '');
+                            time_text.replace('-', '');
+                            if(time_text.indexOf('-') !== -1) {continue};
                             var hour_mark = time_text.indexOf('ч.');
                             var min_mark = time_text.indexOf('мин');
                             if(hour_mark !== -1) {hour = Number(time_text.slice(0, hour_mark));};
@@ -147,17 +135,13 @@
                             if(fact !== 0 && plan == 0) {plan = time;};
                             if(fact == 0) {fact = time;};
 
-                            //alert(fact);
-                            //alert(plan);
-
                         };
                     };
                     fact_sum = fact_sum + fact;
                     plan_sum = plan_sum + plan;
                 });
 
-                totalrow_div.innerHTML = title_totalrow + ' <b><span>' + getTimeTextFromMins(fact_sum) + ' / </span> <span>' + getTimeTextFromMins(plan_sum) + '</span></b>';};
-            //totalrow.insertBefore(markDiv, totalrow_div.nextSibling);
+                totalrow_div.innerHTML = title_totalrow + '&nbsp; <b>' + getTimeTextFromMins(fact_sum) + ' / ' + getTimeTextFromMins(plan_sum) + '</b>';};
         }
 
         main()}, 2000);
@@ -166,7 +150,14 @@
         let hours = Math.trunc(mins/60);
         let minutes = mins % 60;
         var time_text = hours + 'ч.';
-        if (minutes > 0) {time_text = time_text + ' ' + minutes + 'мин';};
+        if (minutes > 0) {time_text = time_text + ' ' + minutes + 'м.';};
         return time_text;
     };
+
+    function setElementStyle(element) {
+        element.style.minWidth = '200px';
+        element.style.maxWidth = '200px';
+        element.style.left = '300px';
+    };
+
 })();
