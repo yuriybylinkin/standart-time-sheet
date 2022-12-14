@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         STANDART TIME SHEET
 // @namespace    http://tampermonkey.net/
-// @version      0.9.1
+// @version      0.9.2
 // @description  this script improve time sheet page
 // @author       yuriy.bylinkin@gmail.com
 // @match        https://standart.nikamed.ru/*
@@ -57,12 +57,7 @@
                     req.send();
                     req.onreadystatechange = function() {
                         if(req.readyState == 4 && req.status == 200) {
-                            let responseText = req.response;
-                            var begin = responseText.indexOf('stateDescription') + 16;
-                            var responseText_end = responseText.slice(begin);
-                            var end = responseText_end.indexOf(',') - 1;
-                            var status = responseText_end.slice(3, end);
-
+                            var status = statusFromResponseText(req.response);
                             const targets = row.querySelectorAll("div.workarea-cell.resource-cell");
                             targets.forEach((target) => {
                                 target.innerHTML = status;
@@ -118,22 +113,21 @@
                     var fact = 0;
                     for (let elem of data_cell.children) {
 
+                        var position = 0;
                         for (let elem1 of elem.children) {
+                            position = position + 1;
 
                             var hour = 0;
                             var min = 0;
 
                             var time_text = elem1.innerHTML;
-                            time_text.replace(' ', '');
-                            time_text.replace('-', '');
-                            if(time_text.indexOf('-') !== -1) {continue};
                             var hour_mark = time_text.indexOf('ч.');
                             var min_mark = time_text.indexOf('мин');
                             if(hour_mark !== -1) {hour = Number(time_text.slice(0, hour_mark));};
                             if(min_mark !== -1 && hour_mark !== -1) {min = Number(time_text.slice(hour_mark + 2, min_mark));};
                             var time = hour*60 + min;
-                            if(fact !== 0 && plan == 0) {plan = time;};
-                            if(fact == 0) {fact = time;};
+                            if(position == 1) {fact = time;};
+                            if(position == 2) {plan = time;};
 
                         };
                     };
@@ -158,6 +152,23 @@
         element.style.minWidth = '200px';
         element.style.maxWidth = '200px';
         element.style.left = '300px';
+    };
+
+    function statusFromResponseText(responseText) {
+        //stateDescription
+        var begin = responseText.indexOf('stateDescription') + 16;
+        if (begin < 100) {return '---';};
+        var responseText_end = responseText.slice(begin);
+        var end = responseText_end.indexOf(',') - 1;
+        var status = responseText_end.slice(3, end);
+        //Статус задачи
+        var begin1 = responseText.indexOf('Статус задачи') + 38;
+        if (begin < 100) {return status;};
+        var responseText_end1 = responseText.slice(begin1);
+        var end1 = responseText_end.indexOf(',') - 2;
+        var status1 = responseText_end.slice(3, end);
+        if (status == status1) {return status;};
+        return status + '/' + status1;
     };
 
 })();
