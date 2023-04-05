@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         STANDART TIME SHEET
 // @namespace    http://tampermonkey.net/
-// @version      0.9.2
+// @version      0.9.3
 // @description  this script improve time sheet page
 // @author       yuriy.bylinkin@gmail.com
 // @match        https://standart.nikamed.ru/*
@@ -51,15 +51,18 @@
                 tasks.forEach((task) => {
 
                     var number_task = task.children[0].innerHTML;
-                    var link = 'https://standart.nikamed.ru/app/v1.0/api/feeds/task/' + number_task;
+                    var link = 'https://standart.nikamed.ru/app/v1.0/api/mobile/tasks/' + number_task;
                     let req = new XMLHttpRequest();
                     req.open('GET', link, true);
+                    req.responseType = 'json';
                     req.send();
                     req.onreadystatechange = function() {
                         if(req.readyState == 4 && req.status == 200) {
-                            var status = statusFromResponseText(req.response);
-                            const targets = row.querySelectorAll("div.workarea-cell.resource-cell");
-                            targets.forEach((target) => {
+                            let response = req.response;
+                            var status = response.status;
+                            // const targets = row.querySelectorAll("div.workarea-cell.resource-cell");
+                            // targets.forEach((target) => {
+                            row.querySelectorAll("div.workarea-cell.resource-cell").forEach((target) => {
                                 target.innerHTML = status;
                                 refresh_total = true;
                             });
@@ -152,23 +155,6 @@
         element.style.minWidth = '200px';
         element.style.maxWidth = '200px';
         element.style.left = '300px';
-    };
-
-    function statusFromResponseText(responseText) {
-        //stateDescription
-        var begin = responseText.indexOf('stateDescription') + 16;
-        if (begin < 100) {return '---';};
-        var responseText_end = responseText.slice(begin);
-        var end = responseText_end.indexOf(',') - 1;
-        var status = responseText_end.slice(3, end);
-        //Статус задачи
-        var begin1 = responseText.indexOf('Статус задачи') + 38;
-        if (begin < 100) {return status;};
-        var responseText_end1 = responseText.slice(begin1);
-        var end1 = responseText_end.indexOf(',') - 2;
-        var status1 = responseText_end.slice(3, end);
-        if (status == status1) {return status;};
-        return status + '/' + status1;
     };
 
 })();
