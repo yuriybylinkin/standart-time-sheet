@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         STANDART TIME SHEET
 // @namespace    http://tampermonkey.net/
-// @version      0.9.3
+// @version      0.9.5
 // @description  this script improve time sheet page
 // @author       yuriy.bylinkin@gmail.com
 // @match        https://standart.nikamed.ru/*
@@ -17,10 +17,35 @@
         function main()
         {
 
+
+
             const resourcecells = document.querySelectorAll("div.header-cell.resource-cell");
             resourcecells.forEach((resourcecell) => {
-                if (resourcecell.innerHTML == 'Статус') { return;}
+
+                if (resourcecell.innerHTML !== 'Ресурс') { return;}
                 resourcecell.innerHTML = 'Статус';
+            });
+
+            const headercomponents = document.querySelectorAll("div.header-cell.title-cell");
+            headercomponents.forEach((headercomponent) => {
+
+                headercomponent.innerHTML = ' ';
+                let element_checkbox = document.getElementById('NotClosed');
+                if (!element_checkbox) {var checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = 'NotClosed';
+                let notclosedfromstorage = sessionStorage.getItem('time-sheet-header-component-not-closed');
+                if (notclosedfromstorage == true.toString()) {checkbox.checked = true};
+                checkbox.addEventListener('change', function(event) {sessionStorage.setItem('time-sheet-header-component-not-closed', event.target.checked); modifyRow();});
+
+                var label = document.createElement('label');
+                label.htmlFor = 'NotClosed';
+                label.appendChild(document.createTextNode('Только не закрытые задачи'));
+
+                label.appendChild(checkbox);
+                headercomponent.appendChild(label);}
+
+
             });
 
             const firstmoments = document.querySelectorAll("div.header-cell.moment-cell.first-moment");
@@ -35,7 +60,14 @@
                 secondmoment.style.display = 'none';
             });
 
-            var refresh_total = true;
+           modifyRow();
+        }
+
+    main()}, 2000);
+
+    function modifyRow() {
+
+        var refresh_total = true;
 
             const rows = document.querySelectorAll("div.workarea-row.ng-star-inserted");
             rows.forEach((row) => {
@@ -59,9 +91,9 @@
                     req.onreadystatechange = function() {
                         if(req.readyState == 4 && req.status == 200) {
                             let response = req.response;
-                            var status = response.status;
-                            // const targets = row.querySelectorAll("div.workarea-cell.resource-cell");
-                            // targets.forEach((target) => {
+                            var status = response.stateDescription;
+                            let notclosed = sessionStorage.getItem('time-sheet-header-component-not-closed');
+                            if (notclosed == 'true' && (status == 'Завершена' || status == 'Встреча поставлена' || status == 'Встреча проведена')) {row.style.display = 'none';} else {row.style.display = 'flex';}; //
                             row.querySelectorAll("div.workarea-cell.resource-cell").forEach((target) => {
                                 target.innerHTML = status;
                                 refresh_total = true;
@@ -139,9 +171,8 @@
                 });
 
                 totalrow_div.innerHTML = title_totalrow + '&nbsp; <b>' + getTimeTextFromMins(fact_sum) + ' / ' + getTimeTextFromMins(plan_sum) + '</b>';};
-        }
 
-        main()}, 2000);
+    };
 
     function getTimeTextFromMins(mins) {
         let hours = Math.trunc(mins/60);
