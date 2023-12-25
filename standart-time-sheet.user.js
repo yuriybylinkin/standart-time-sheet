@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         STANDART TIME SHEET
 // @namespace    http://tampermonkey.net/
-// @version      0.9.6
+// @version      0.9.7
 // @description  this script improve time sheet page
 // @author       yuriy.bylinkin@gmail.com
 // @match        https://standart.nikamed.ru/*
@@ -83,32 +83,26 @@
                 tasks.forEach((task) => {
 
                     var number_task = task.children[0].innerHTML;
-                    var link = 'https://standart.nikamed.ru/api/tasks/short-info?v=2.0';
-                    var req_body0 = '[' + number_task + ']';
+                    var link = 'https://standart.nikamed.ru/app/v1.0/api/mobile/tasks/' + number_task;
                     let req = new XMLHttpRequest();
-                    req.open('POST', link, true);
+                    req.open('GET', link, true);
                     req.responseType = 'json';
-                    req.setRequestHeader('Content-Type', 'application/json');
-                    req.setRequestHeader('Accept', 'application/json');
-                    req.send(req_body0);
+                    req.send();
                     req.onreadystatechange = function() {
                         if(req.readyState == 4 && req.status == 200) {
-                            let responses = req.response.data;
-
-                            responses.forEach((response) => {
-                                var status = response.stateDescription;
-                                let notclosed = sessionStorage.getItem('time-sheet-header-component-not-closed');
-                                if (notclosed == 'true' && (status == 'Завершена' || status == 'Встреча поставлена' || status == 'Встреча проведена')) {row.style.display = 'none';} else {row.style.display = 'flex';};
-                                row.querySelectorAll("div.workarea-cell.resource-cell").forEach((target) => {
-                                    target.innerHTML = status;
-                                    refresh_total = true;
-                                });
+                            let response = req.response;
+                            var status = response.stateDescription;
+                            let notclosed = sessionStorage.getItem('time-sheet-header-component-not-closed');
+                            if (notclosed == 'true' && (status == 'Завершена' || status == 'Встреча поставлена' || status == 'Встреча проведена')) {row.style.display = 'none';} else {row.style.display = 'flex';}; //
+                            row.querySelectorAll("div.workarea-cell.resource-cell").forEach((target) => {
+                                target.innerHTML = status;
+                                refresh_total = true;
+                            });
                         }
-                    );
-                    }
                     }
 
                     var req_body = '{"taskId": ' + number_task + ',"forLinkedTasks": true }';
+
                     let req1 = new XMLHttpRequest();
                     req1.open('POST', 'https://standart.nikamed.ru/api/comments?v=2.0', true);
                     req1.setRequestHeader('Content-Type', 'application/json');
